@@ -1,0 +1,39 @@
+name: BlazeCraft Windows Installer (experimental)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Setup Java for Minecraft tooling
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build single NSIS installer
+        run: pnpm --filter @modrinth/app exec tauri build --bundles nsis
+      - name: Upload installer
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlazeCraft-Windows-Installer
+          path: target/release/bundle/nsis/*.exe
+          if-no-files-found: error
